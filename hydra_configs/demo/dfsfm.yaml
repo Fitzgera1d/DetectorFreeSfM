@@ -41,7 +41,7 @@ neuralsfm:
   NEUSFM_fine_match_model_path:
     - weight/multiview_matcher.ckpt
   NEUSFM_fine_match_cfg_path: 
-    - hydra_training_configs/experiment/multiview_refinement_matching.yaml
+    - configs/sfm/hydra_training_configs/experiment/multiview_refinement_matching.yaml
 
   # Data related:
   n_images: null # For debug

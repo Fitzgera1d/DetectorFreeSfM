@@ -1,6 +1,6 @@
 import sys
 sys.path.append("third_party/LoFTR/src/config")
-from default import _CN as cfg
+from third_party.LoFTR.src.config.default import _CN as cfg
 
 cfg.LOFTR.MATCH_COARSE.MATCH_TYPE = 'dual_softmax'
 cfg.LOFTR.MATCH_COARSE.THR = 0.2

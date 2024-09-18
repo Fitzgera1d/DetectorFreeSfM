@@ -3,6 +3,7 @@ import ray
 import math
 import os.path as osp
 from loguru import logger
+from pathlib import Path
 from typing import ChainMap
 
 from src.utils.ray_utils import ProgressBar, chunks, chunk_index, split_dict
@@ -25,19 +26,19 @@ cfgs = {
             "match_thr": 0.2,
             "matchformer":
             {
-                "cfg_path_coarse_only": "third_party/MatchFormer/config/matchformer_coarse_only.py",
-                "cfg_path_coarse_fine": "third_party/MatchFormer/config/matchformer_coarse_fine.py",
+                "cfg_path_coarse_only": Path(__file__).parent.parent.parent / "third_party/MatchFormer/config/matchformer_coarse_only.py",
+                "cfg_path_coarse_fine": Path(__file__).parent.parent.parent / "third_party/MatchFormer/config/matchformer_coarse_fine.py",
                 "weight_path": "weight/outdoor-large-LA.ckpt",
             },
             "aspanformer":{
-                "cfg_path_coarse_only": "third_party/aspantransformer/configs/aspan/outdoor/aspan_test_coarse_only.py",
-                "cfg_path_coarse_fine": "third_party/aspantransformer/configs/aspan/outdoor/aspan_test.py",
+                "cfg_path_coarse_only": Path(__file__).parent.parent.parent / "third_party/aspantransformer/configs/aspan/outdoor/aspan_test_coarse_only.py",
+                "cfg_path_coarse_fine": Path(__file__).parent.parent.parent / "third_party/aspantransformer/configs/aspan/outdoor/aspan_test.py",
                 "weight_path": "weight/aspanformer_weights/outdoor.ckpt",
             },
             "loftr_official":
             {
-                "cfg_path_coarse_only": "third_party/LoFTR/configs/loftr/outdoor/loftr_ds_coarse_only.py",
-                "cfg_path_coarse_fine": "third_party/LoFTR/configs/loftr/outdoor/loftr_ds.py",
+                "cfg_path_coarse_only": Path(__file__).parent.parent.parent / "third_party/LoFTR/configs/loftr/outdoor/loftr_ds_coarse_only.py",
+                "cfg_path_coarse_fine": Path(__file__).parent.parent.parent / "third_party/LoFTR/configs/loftr/outdoor/loftr_ds.py",
                 "weight_path": "weight/outdoor_ds.ckpt",
             },
             "seed": 666
