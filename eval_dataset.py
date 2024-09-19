@@ -57,13 +57,23 @@ def eval_core(scene_paths, cfg, worker_id=0, pba=None):
         ray_cfg = None
 
     results = {}
+    # Edit(Fitz): add sfm_result_paths
+    sfm_result_paths = set()
+
     scene_paths = tqdm(scene_paths) if pba is None else scene_paths
     for scene_path in scene_paths:
         if 'phase' not in cfg or cfg.phase == 'reconstruction':
-            metric_dict = DetectorFreeSfM(
+            # Edit(Fitz): add sfm_result_paths
+            # metric_dict = DetectorFreeSfM(
+            dataset_name, scene_name = scene_path.split('/')[-2], scene_path.split('/')[-1]
+            scene_output_dir = Path(cfg.results_output_dir) / dataset_name / scene_name
+            metric_dict, sfm_result_path = DetectorFreeSfM(
                 cfg.neuralsfm,
                 method=cfg.method,
                 work_dir=scene_path,
+                # Edit(Fitz): add sfm_result_paths
+                
+                results_output_dir=scene_output_dir,
                 gt_pose_dir=osp.join(scene_path, "poses"),
                 prior_intrin_dir=osp.join(scene_path, "intrins")
                 if cfg.use_prior_intrin or cfg.neuralsfm.triangulation_mode
@@ -75,6 +85,8 @@ def eval_core(scene_paths, cfg, worker_id=0, pba=None):
                 visualize=cfg.visualize,
                 verbose=cfg.verbose,
             )
+            # Edit(Fitz): add sfm_result_paths
+            sfm_result_paths.add(sfm_result_path)
         else:
             raise NotImplementedError
         results[osp.basename(scene_path)] = metric_dict
@@ -82,7 +94,9 @@ def eval_core(scene_paths, cfg, worker_id=0, pba=None):
         if pba is not None:
             pba.update.remote(1)
     logger.info(f"Worker {worker_id} finish!")
-    return results
+    # Edit(Fitz): add sfm_result_paths
+    # return results
+    return results, sfm_result_paths
 
 @ray.remote(num_cpus=1, num_gpus=1, max_calls=1)  # release gpu after finishing
 def eval_core_ray_wrapper(*args, **kwargs):
@@ -147,10 +161,15 @@ def eval_dataset(cfg):
         ]
         pb.print_until_done()
         results = ray.get(results)
-        metric_dict = dict(ChainMap(*[k for k in results]))
+        # Edit(Fitz): add sfm_result_paths
+        # metric_dict = dict(ChainMap(*[k for k in results]))
+        metric_dict = dict(ChainMap(*[k for k, _ in results]))
+        sfm_result_paths = set(*[k for _, k in results])
         ray.shutdown()
     else:
-        metric_dict = eval_core(scene_paths, cfg)
+        # Edit(Fitz): add sfm_result_paths
+        # metric_dict = eval_core(scene_paths, cfg)
+        metric_dict, sfm_result_paths = eval_core(scene_paths, cfg)
 
     if not cfg.neuralsfm.close_eval:
         # Aggregate metrics from all scenes and output:
@@ -189,6 +208,8 @@ def eval_dataset(cfg):
                 verbose=True,
                 output_path=output_path,
             )
+    # Edit(Fitz): add sfm_result_paths
+    return sfm_result_paths
 
 @hydra.main(config_path="hydra_configs/", config_name="base.yaml")
 def main(cfg: DictConfig):

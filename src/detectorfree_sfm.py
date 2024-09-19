@@ -1,5 +1,6 @@
 import os
 import os.path as osp
+from pathlib import Path
 from loguru import logger
 import natsort
 from src.evaluator import Evaluator
@@ -11,6 +12,8 @@ def DetectorFreeSfM(
     args,
     method,
     work_dir,
+    # Edit(Fitz): add sfm_result_paths
+    results_output_dir=None,
     gt_pose_dir=None,
     prior_intrin_dir=None,
     prior_pose_dir=None,
@@ -31,6 +34,12 @@ def DetectorFreeSfM(
     img_list = [
         osp.join(image_pth, img_name) for img_name in img_names if ("._" not in img_name) and ('.DS_Store' not in img_name)
     ]
+
+    # Edit(Fitz): add sfm_result_paths
+    if results_output_dir is None:
+        logger.warning(f"Results output directory has not been assigned, output put will be saved under the images' parent directory")
+        results_output_dir = Path(work_dir)
+    results_output_dir.mkdir(parents=True, exist_ok=True)
 
     # Used for debugging:
     if n_images is not None:
@@ -91,15 +100,26 @@ def DetectorFreeSfM(
 
         if suffix != "":
             method_name += f'_{suffix}'
-        feature_out = osp.join(work_dir, method_name, "keypoints.h5")
-        match_out = osp.join(work_dir, method_name, "matches.h5")  # Coarse match
-        colmap_coarse_dir = osp.join(work_dir, method_name, "colmap_coarse")
-        colmap_refined_dir = osp.join(work_dir, method_name, "colmap_refined")
-        vis_dir = osp.join(work_dir, "vis3d", method_name)
 
-        if osp.exists(osp.join(work_dir, method_name)) and args.redo_all:
-            os.system(f"rm -rf {osp.join(work_dir, method_name)}")
-        os.makedirs(osp.join(work_dir, method_name), exist_ok=True)
+        
+        # feature_out = osp.join(work_dir, method_name, "keypoints.h5")
+        # match_out = osp.join(work_dir, method_name, "matches.h5")  # Coarse match
+        # colmap_coarse_dir = osp.join(work_dir, method_name, "colmap_coarse")
+        # colmap_refined_dir = osp.join(work_dir, method_name, "colmap_refined")
+        # vis_dir = osp.join(work_dir, "vis3d", method_name)
+
+        # if osp.exists(osp.join(work_dir, method_name)) and args.redo_all:
+        #     os.system(f"rm -rf {osp.join(work_dir, method_name)}")
+        # os.makedirs(osp.join(work_dir, method_name), exist_ok=True)
+        feature_out = osp.join(results_output_dir, method_name, "keypoints.h5")
+        match_out = osp.join(results_output_dir, method_name, "matches.h5")  # Coarse match
+        colmap_coarse_dir = osp.join(results_output_dir, method_name, "colmap_coarse")
+        colmap_refined_dir = osp.join(results_output_dir, method_name, "colmap_refined")
+        vis_dir = osp.join(results_output_dir, "vis3d", method_name)
+
+        if osp.exists(osp.join(results_output_dir, method_name)) and args.redo_all:
+            os.system(f"rm -rf {osp.join(results_output_dir, method_name)}")
+        os.makedirs(osp.join(results_output_dir, method_name), exist_ok=True)
 
         if not osp.exists(match_out) or args.redo_matching:
             # Coarse-Level Matching:
@@ -126,7 +146,9 @@ def DetectorFreeSfM(
             coarse_SfM_runner(
                 img_list,
                 img_pairs,
-                osp.join(work_dir, method_name),
+                # Edit(Fitz): add sfm_result_path
+                # osp.join(work_dir, method_name),
+                osp.join(results_output_dir, method_name),
                 feature_out=feature_out,
                 match_out=match_out,
                 colmap_coarse_dir=colmap_coarse_dir,
@@ -152,7 +174,7 @@ def DetectorFreeSfM(
             error_dict, metrics_dict = evaluator.eval_metric(
                 osp.join(colmap_coarse_dir, best_model_id)
             )
-            return metrics_dict
+            return metrics_dict # , osp.join(colmap_output_dir, best_model_id)
 
         # Post Optimization
         if enable_post_optimization:
@@ -208,6 +230,11 @@ def DetectorFreeSfM(
                 error_dict, metrics_dict = evaluator.eval_metric(colmap_refined_dir)
 
                 metrics_dict = evaluator.prepare_output_from_buffer()
-                return metrics_dict
+                # Edit(Fitz): add sfm_result_paths
+                # return metrics_dict
+                return metrics_dict, colmap_refined_dir
+            # Edit(Fitz): add sfm_result_paths
+            else:
+                return None, colmap_refined_dir
     else:
         raise NotImplementedError
