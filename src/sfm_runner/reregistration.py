@@ -4,7 +4,7 @@ import subprocess
 import os.path as osp
 
 from pathlib import Path
-
+COLMAP_PATH = os.environ.get("COLMAP_PATH", 'colmap') # 'colmap is default value
 
 def run_image_reregistration(
     deep_sfm_dir, after_refine_dir, colmap_path, image_path="/", colmap_configs=None, verbose=True
@@ -62,7 +62,7 @@ def run_image_reregistration(
 def main(
     deep_sfm_dir,
     after_refine_dir,
-    colmap_path="colmap",
+    colmap_path=COLMAP_PATH,
     image_path="/",
     colmap_configs=None,
     verbose=True
